@@ -2,10 +2,10 @@ import streamlit as st
 import os
 from services.llm_service import LLMService
 from services.novel_service import NovelService
-from llm_client import GeminiClient, OpenAIClient, ClaudeClient
+from llm_client import GeminiClient
 from faiss_manager import FaissManager
 from prompts.prompt_manager import PromptManager
-from config import LLM_MODELS, DEFAULT_MODEL_ID, config
+from config import LLM_MODELS, DEFAULT_MODEL_ID
 from novel_data_manager import Character, Novel, NovelSettings
 
 # === 1. 초기화 (session_state에 의존성 주입) ===
@@ -14,20 +14,14 @@ if 'llm_service' not in st.session_state:
 
     # secrets.toml에서 API 키를 안전하게 가져옵니다.
     try:
-        api_keys = {
-            "google": st.secrets["GOOGLE_API_KEY"],
-            "openai": st.secrets["OPENAI_API_KEY"],
-            "anthropic": st.secrets["ANTHROPIC_API_KEY"]
-        }
+        api_key = st.secrets["GOOGLE_API_KEY"]
     except KeyError as e:
         st.error(f"API 키를 찾을 수 없습니다: {e}. `.streamlit/secrets.toml` 파일을 확인해주세요.")
         st.stop()
 
     # 클라이언트 인스턴스 생성 및 주입
     llm_clients = {
-        "google": GeminiClient(api_key=api_keys.get("google")),
-        "openai": OpenAIClient(api_key=api_keys.get("openai")),
-        "anthropic": ClaudeClient(api_key=api_keys.get("anthropic"))
+        "google": GeminiClient(api_key=api_key)
     }
 
     st.session_state.prompt_manager = PromptManager()
@@ -52,8 +46,9 @@ st.title("AI 소설 작가")
 with st.sidebar:
     st.header("설정")
 
-    # LLM 모델 선택
-    model_options = list(LLM_MODELS.keys())
+    # Gemini 모델만 선택 가능하도록 필터링
+    gemini_models = {k: v for k, v in LLM_MODELS.items() if v["provider"] == "google"}
+    model_options = list(gemini_models.keys())
     active_model_id = st.session_state.llm_service.active_model_id
     selected_model_id = st.selectbox(
         "사용할 LLM 모델 선택",
@@ -105,9 +100,10 @@ with st.sidebar:
                 st.session_state.character_count = len(st.session_state.novel.settings.characters)
             
             for i in range(st.session_state.character_count):
-                st.session_state.novel.settings.characters[i].name = st.text_input(f"{i+1}. 이름", value=st.session_state.novel.settings.characters[i].name, key=f"char_name_{i}")
-                st.session_state.novel.settings.characters[i].personality = st.text_input("성격 (쉼표로 구분)", value=", ".join(st.session_state.novel.settings.characters[i].personality), key=f"char_pers_{i}").split(', ')
-                st.session_state.novel.settings.characters[i].appearance = st.text_input("외모 (쉼표로 구분)", value=", ".join(st.session_state.novel.settings.characters[i].appearance), key=f"char_app_{i}").split(', ')
+                char = st.session_state.novel.settings.characters[i]
+                st.session_state.novel.settings.characters[i].name = st.text_input(f"{i+1}. 이름", value=char.name, key=f"char_name_{i}")
+                st.session_state.novel.settings.characters[i].personality = st.text_input("성격 (쉼표로 구분)", value=", ".join(char.personality), key=f"char_pers_{i}").split(', ')
+                st.session_state.novel.settings.characters[i].appearance = st.text_input("외모 (쉼표로 구분)", value=", ".join(char.appearance), key=f"char_app_{i}").split(', ')
 
             col_add, col_remove = st.columns(2)
             with col_add:
