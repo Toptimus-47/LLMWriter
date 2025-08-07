@@ -1,39 +1,38 @@
-# services/llm_service.py
-
-import json
-from clients.llm_client import GeminiClient
-from prompts.prompt_manager import PromptManager
 from models.novel import Novel
-from typing import List
-from config import config
+from typing import List, Dict
 
 class LLMService:
-    """LLM 호출 및 관련 로직 처리를 담당하는 서비스"""
-    def __init__(self):
-        self.client = GeminiClient()
-        self.prompt_manager = PromptManager()
-        self.model_id = config.MAIN_LLM_MODEL
+    def __init__(self, llm_client, prompt_manager):
+        self.client = llm_client
+        self.prompt_manager = prompt_manager
 
-    def generate_prologue(self, novel: Novel) -> str:
-        """프롤로그 생성을 위한 프롬프트를 만들고 LLM을 호출합니다."""
-        system_prompt = self.prompt_manager.get_prologue_system_prompt()
-        user_prompt = self.prompt_manager.get_prologue_user_prompt(novel)
-        
-        prologue_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)
-        return prologue_content
+    def get_available_models(self) -> Dict[str, str]:
+        """
+        Gemini API에서 사용 가능한 모델 목록을 가져옵니다.
+        """
+        raw_models = self.client.list_models()
+        available_models = {}
+        for model in raw_models:
+            if 'generateContent' in model.supported_generation_methods:
+                display_name = model.display_name
+                model_id = model.name.split('/')[1]
+                available_models[display_name] = model_id
+        return available_models
 
-    def generate_next_chapter(self, novel: Novel, rag_context: List[str]) -> str:
-        """다음 챕터 생성을 위한 프롬프트를 만들고 LLM을 호출합니다."""
-        system_prompt = self.prompt_manager.get_next_chapter_system_prompt()
-        user_prompt = self.prompt_manager.get_next_chapter_user_prompt(novel, rag_context)
-        
-        next_chapter_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)
-        return next_chapter_content
+    def generate_prologue(self, settings, model_id):
+        """
+        프롤로그를 생성하고 요약합니다.
+        """
+        prompt = self.prompt_manager.get_prologue_prompt(settings)
+        content = self.client.generate_content(model_id, prompt)
+        summary = self.prompt_manager.summarize_novel(content)
+        return content, summary
 
-    def summarize_text(self, text: str) -> str:
-        """주어진 텍스트를 요약합니다."""
-        system_prompt = self.prompt_manager.get_summarize_system_prompt()
-        user_prompt = self.prompt_manager.get_summarize_user_prompt(text)
-
-        summary = self.client.generate_content(system_prompt, user_prompt, self.model_id)
-        return summary
+    def generate_next_chapter(self, novel: Novel, model_id: str):
+        """
+        다음 챕터를 생성합니다.
+        """
+        prompt = self.prompt_manager.get_next_chapter_prompt(novel)
+        content = self.client.generate_content(model_id, prompt)
+        novel.add_chapter(content)
+        novel.update_summary(self.prompt_manager.summarize_novel(novel.get_full_text()))
