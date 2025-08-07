@@ -1,1 +1,30 @@
-{"cells":[{"cell_type":"code","source":"# config.py\nimport os\nfrom dotenv import load_dotenv\n\nload_dotenv()\n\nclass AppConfig:\n    \"\"\"애플리케이션 전반에 사용되는 설정 클래스\"\"\"\n    \n    # --- API 키 ---\n    # .env 파일에 GOOGLE_API_KEY=\"YOUR_API_KEY\" 형식으로 저장하세요.\n    GOOGLE_API_KEY = os.getenv(\"GOOGLE_API_KEY\")\n\n    # --- LLM 모델 ---\n    # 사용할 모델 ID. Gemini 2.5 Flash를 기본으로 설정합니다.\n    MAIN_LLM_MODEL = \"gemini-1.5-flash-latest\" \n    \n    # --- 파일 경로 ---\n    NOVELS_DIR = \"novels\"\n    SETTINGS_FILENAME = \"settings.json\"\n    CHAPTERS_DIR = \"chapters\"\n    VECTOR_STORE_DIR = \"vector_store\"\n    FAISS_INDEX_NAME = \"novel.faiss\"\n    \n    # --- RAG (Faiss) 설정 ---\n    # 한국어 임베딩에 특화된 모델 사용\n    EMBEDDING_MODEL = 'jhgan/ko-sroberta-multitask'\n    RAG_TOP_K = 3 # 다음 챕터 생성 시 참조할 관련 챕터 수\n\nconfig = AppConfig()","outputs":[],"execution_count":null,"metadata":{}}],"metadata":{"colab":{"from_bard":true},"kernelspec":{"display_name":"Python 3","name":"python3"}},"nbformat":4,"nbformat_minor":0}
+# config.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class AppConfig:
+    """애플리케이션 전반에 사용되는 설정 클래스"""
+    
+    # --- API 키 ---
+    # .env 파일에 GOOGLE_API_KEY="YOUR_API_KEY" 형식으로 저장하세요.
+    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+
+    # --- LLM 모델 ---
+    # 사용할 모델 ID. Gemini 2.5 Flash를 기본으로 설정합니다.
+    MAIN_LLM_MODEL = "gemini-1.5-flash-latest" 
+    
+    # --- 파일 경로 ---
+    NOVELS_DIR = "novels"
+    SETTINGS_FILENAME = "settings.json"
+    CHAPTERS_DIR = "chapters"
+    VECTOR_STORE_DIR = "vector_store"
+    FAISS_INDEX_NAME = "novel.faiss"
+    
+    # --- RAG (Faiss) 설정 ---
+    # 한국어 임베딩에 특화된 모델 사용
+    EMBEDDING_MODEL = 'jhgan/ko-sroberta-multitask'
+    RAG_TOP_K = 3 # 다음 챕터 생성 시 참조할 관련 챕터 수
+
+config = AppConfig()
