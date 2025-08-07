@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from services.novel_service import NovelService
 from models.character import Character
-
+from config import config
 # --- 페이지 설정 ---
 st.set_page_config(page_title="AI 소설 어시스턴트", layout="wide")
 
