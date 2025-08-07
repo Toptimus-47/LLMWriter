@@ -1,22 +1,52 @@
-# main_app.py
 import streamlit as st
 import os
 import sys
 
-# --- 시스템 경로 설정 ---
-# 애플리케이션의 루트 디렉토리를 Python 경로에 추가하여 모듈을 찾을 수 있도록 함
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
-
+# 의존성들을 모두 임포트
+from clients.llm_client import GeminiClient
 from services.novel_service import NovelService
+from services.llm_service import LLMService
+from services.file_service import FileService
+from prompts.prompt_manager import PromptManager
 from models.character import Character
 from config import config
+
 # --- 페이지 설정 ---
 st.set_page_config(page_title="AI 소설 어시스턴트", layout="wide")
 
-# --- 서비스 초기화 ---
-# 서비스 인스턴스는 한 번만 생성하여 st.session_state에 저장
+# --- 서비스 초기화 (DI 컨테이너 역할) ---
 if 'novel_service' not in st.session_state:
-    st.session_state.novel_service = NovelService()
+    try:
+        # API 키를 secrets에서 안전하게 가져옴
+        api_key = st.secrets.get("GOOGLE_API_KEY")
+        if not api_key:
+            st.error("GOOGLE_API_KEY가 Streamlit Secrets에 설정되지 않았습니다.")
+            st.stop()
+        
+        # 1. 가장 하위 의존성(Clients, Prompts)부터 생성
+        gemini_client = GeminiClient(api_key=api_key)
+        prompt_manager = PromptManager()
+        file_service = FileService()
+        
+        # 2. 다음 단계 의존성(Services) 생성 시 상위 의존성을 주입
+        llm_service = LLMService(
+            llm_client=gemini_client,
+            prompt_manager=prompt_manager
+        )
+        
+        # 3. 최상위 서비스(NovelService) 생성 시 모든 의존성 주입
+        st.session_state.novel_service = NovelService(
+            file_service=file_service,
+            llm_service=llm_service
+        )
+        
+        # 모델 목록을 캐싱하여 API 호출 횟수를 줄임
+        if 'available_models' not in st.session_state:
+            st.session_state.available_models = llm_service.get_available_models()
+
+    except Exception as e:
+        st.error(f"서비스 초기화 중 오류 발생: {e}")
+        st.stop()
 
 # --- 헬퍼 함수 ---
 def reset_ui_state():
@@ -93,6 +123,20 @@ if st.session_state.current_novel:
         with settings_tab:
             st.subheader("기본 설정")
             novel.settings.style = st.text_area("문체", value=novel.settings.style, placeholder="예: 건조하고 간결한 문체, 화려하고 시적인 묘사")
+            
+            # 모델 선택 드롭다운 박스
+            available_models = st.session_state.available_models
+            model_options = list(available_models.keys())
+            if not model_options:
+                st.warning("사용 가능한 모델이 없습니다. API 키를 확인해주세요.")
+            else:
+                selected_model_name = st.selectbox(
+                    "모델 선택",
+                    options=model_options,
+                    index=0
+                )
+                novel.settings.model_id = available_models[selected_model_name]
+            
             novel.settings.pov = st.selectbox("시점", ["1인칭 주인공", "3인칭 관찰자", "3인칭 전지적"], index=2)
             
             col1, col2, col3 = st.columns(3)
@@ -112,7 +156,6 @@ if st.session_state.current_novel:
             if 'character_list' not in st.session_state:
                 st.session_state.character_list = novel.settings.characters
 
-            # 등장인물 목록 표시
             for i, char in enumerate(st.session_state.character_list):
                 with st.expander(f"**{char.name}**"):
                     st.write(f"**성격:** {', '.join(char.personality)}")
@@ -128,7 +171,6 @@ if st.session_state.current_novel:
             with st.form("new_char_form", clear_on_submit=True):
                 char_name = st.text_input("이름", key="new_char_name")
                 
-                # 키워드 입력을 위한 멀티셀렉트 구현
                 personality_keywords_str = st.text_input("성격 키워드 (쉼표로 구분)", key="new_char_personality")
                 appearance_keywords_str = st.text_input("외모 키워드 (쉼표로 구분)", key="new_char_appearance")
 
@@ -143,13 +185,16 @@ if st.session_state.current_novel:
 
         st.markdown("---")
         if st.button("✨ 프롤로그 생성 시작", type="primary", use_container_width=True):
-            with st.spinner(f"{config.MAIN_LLM_MODEL}가 프롤로그를 창작하고 있습니다..."):
-                try:
-                    novel_service.generate_prologue(novel)
-                    st.success("프롤로그 생성이 완료되었습니다!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"프롤로그 생성 중 오류 발생: {e}")
+            if not novel.settings.model_id:
+                st.error("모델을 먼저 선택해주세요.")
+            else:
+                with st.spinner(f"{st.session_state.available_models.get(novel.settings.model_id, novel.settings.model_id)}가 프롤로그를 창작하고 있습니다..."):
+                    try:
+                        novel_service.generate_prologue(novel)
+                        st.success("프롤로그 생성이 완료되었습니다!")
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"프롤로그 생성 중 오류 발생: {e}")
 
     # 소설 생성 후 뷰
     else:
@@ -158,9 +203,9 @@ if st.session_state.current_novel:
         with col1:
             st.subheader("📜 소설 본문")
             
-            chapter_titles = [chapter.title for chapter in novel.chapters]
+            chapter_titles = [f"프롤로그"] + [f"챕터 {i+1}" for i in range(len(novel.chapters) - 1)]
             
-            if 'selected_chapter_title' not in st.session_state or st.session_state.selected_chapter_title not in chapter_titles:
+            if 'selected_chapter_title' not in st.session_state or st.session_state.selected_chapter_title is None:
                 st.session_state.selected_chapter_title = chapter_titles[-1]
 
             def on_chapter_select():
@@ -176,7 +221,6 @@ if st.session_state.current_novel:
 
             selected_index = chapter_titles.index(st.session_state.selected_chapter_title)
             st.markdown(f"### {st.session_state.selected_chapter_title}")
-            # 줄바꿈을 문단 구분을 위해 두 번의 줄바꿈으로 변경하여 렌더링
             st.markdown(novel.chapters[selected_index].content.replace("\n", "\n\n"))
 
         with col2:
@@ -186,8 +230,7 @@ if st.session_state.current_novel:
                 with st.spinner("다음 챕터를 생성하고 있습니다..."):
                     try:
                         novel_service.generate_next_chapter(novel)
-                        # 새 챕터가 생성되면 선택된 챕터를 마지막 챕터로 업데이트
-                        st.session_state.selected_chapter_title = novel.chapters[-1].title
+                        st.session_state.selected_chapter_title = f"챕터 {len(novel.chapters) - 1}"
                         st.success("다음 챕터 생성 완료!")
                         st.rerun()
                     except Exception as e:
