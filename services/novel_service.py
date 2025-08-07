@@ -1,4 +1,6 @@
 # services/novel_service.py
+import json
+
 from models.novel import Novel, Chapter
 from services.file_service import FileService
 from services.llm_service import LLMService
