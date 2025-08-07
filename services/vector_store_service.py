@@ -1,5 +1,6 @@
 # services/vector_store_service.py
 import os
+import json
 import faiss
 from sentence_transformers import SentenceTransformer
 import numpy as np
