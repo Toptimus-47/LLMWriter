@@ -1,4 +1,6 @@
 # services/llm_service.py
+
+import json
 from clients.llm_client import GeminiClient
 from prompts.prompt_manager import PromptManager
 from models.novel import Novel
