@@ -8,7 +8,7 @@ from services.novel_service import NovelService
 from services.llm_service import LLMService
 from services.file_service import FileService
 from prompts.prompt_manager import PromptManager
-from models.character import Character
+from models.novel import Novel, NovelSettings, Character, Chapter
 from config import config
 
 # --- 페이지 설정 ---
@@ -24,7 +24,6 @@ if 'novel_service' not in st.session_state:
             st.stop()
         
         # 1. 가장 하위 의존성(Clients, Prompts)부터 생성
-        # GeminiClient에 api_key를 주입
         gemini_client = GeminiClient(api_key=api_key)
         prompt_manager = PromptManager()
         file_service = FileService()
@@ -196,8 +195,9 @@ if st.session_state.current_novel:
                 with st.spinner(f"{selected_model_name}가 프롤로그를 창작하고 있습니다..."):
                     try:
                         novel_service = st.session_state.novel_service
-                        novel_service.generate_prologue(novel)
+                        input_tokens, output_tokens = novel_service.generate_prologue(novel)
                         st.success("프롤로그 생성이 완료되었습니다!")
+                        st.info(f"✅ 토큰 사용량: 입력 {input_tokens} | 출력 {output_tokens} | 총 {input_tokens + output_tokens}")
                         st.rerun()
                     except Exception as e:
                         st.error(f"프롤로그 생성 중 오류 발생: {e}")
@@ -232,13 +232,23 @@ if st.session_state.current_novel:
         with col2:
             st.subheader("⚙️ 작업 관리")
             
+            # 여기서 사건 진행 프롬프트를 입력받습니다.
+            novel.next_chapter_prompt = st.text_area(
+                "다음 챕터에 대한 작가의 사건 진행 프롬프트", 
+                value=novel.next_chapter_prompt or "",
+                height=150,
+                placeholder="예: 주인공이 새로운 인물을 만나고, 과거의 비밀에 대한 힌트를 얻게 된다."
+            )
+            
             if st.button("다음 챕터 생성", use_container_width=True):
                 with st.spinner("다음 챕터를 생성하고 있습니다..."):
                     try:
                         novel_service = st.session_state.novel_service
-                        novel_service.generate_next_chapter(novel)
+                        input_tokens, output_tokens = novel_service.generate_next_chapter(novel, user_prompt=novel.next_chapter_prompt)
+                        novel.next_chapter_prompt = "" # 프롬프트 입력창 초기화
                         st.session_state.selected_chapter_title = f"챕터 {len(novel.chapters) - 1}"
                         st.success("다음 챕터 생성 완료!")
+                        st.info(f"✅ 토큰 사용량: 입력 {input_tokens} | 출력 {output_tokens} | 총 {input_tokens + output_tokens}")
                         st.rerun()
                     except Exception as e:
                         st.error(f"챕터 생성 중 오류 발생: {e}")
