@@ -1,15 +1,13 @@
 # config.py
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
 
 class AppConfig:
     """애플리케이션 전반에 사용되는 설정 클래스"""
     
     # --- API 키 ---
     # .env 파일에 GOOGLE_API_KEY="YOUR_API_KEY" 형식으로 저장하세요.
-    GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+    api_key = st.secrets["API_KEY"]
 
     # --- LLM 모델 ---
     # 사용할 모델 ID. Gemini 2.5 Flash를 기본으로 설정합니다.
