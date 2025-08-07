@@ -7,7 +7,7 @@ class AppConfig:
     
     # --- API 키 ---
     # .env 파일에 GOOGLE_API_KEY="YOUR_API_KEY" 형식으로 저장하세요.
-    api_key = st.secrets["GOOGLE_API_KEY"]
+    GOOGLE_API_KEY= st.secrets["GOOGLE_API_KEY"]
 
     # --- LLM 모델 ---
     # 사용할 모델 ID. Gemini 2.5 Flash를 기본으로 설정합니다.
