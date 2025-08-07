@@ -24,6 +24,7 @@ if 'novel_service' not in st.session_state:
             st.stop()
         
         # 1. 가장 하위 의존성(Clients, Prompts)부터 생성
+        # GeminiClient에 api_key를 주입
         gemini_client = GeminiClient(api_key=api_key)
         prompt_manager = PromptManager()
         file_service = FileService()
@@ -188,8 +189,13 @@ if st.session_state.current_novel:
             if not novel.settings.model_id:
                 st.error("모델을 먼저 선택해주세요.")
             else:
-                with st.spinner(f"{st.session_state.available_models.get(novel.settings.model_id, novel.settings.model_id)}가 프롤로그를 창작하고 있습니다..."):
+                selected_model_name = next(
+                    (key for key, value in st.session_state.available_models.items() if value == novel.settings.model_id),
+                    novel.settings.model_id
+                )
+                with st.spinner(f"{selected_model_name}가 프롤로그를 창작하고 있습니다..."):
                     try:
+                        novel_service = st.session_state.novel_service
                         novel_service.generate_prologue(novel)
                         st.success("프롤로그 생성이 완료되었습니다!")
                         st.rerun()
@@ -229,6 +235,7 @@ if st.session_state.current_novel:
             if st.button("다음 챕터 생성", use_container_width=True):
                 with st.spinner("다음 챕터를 생성하고 있습니다..."):
                     try:
+                        novel_service = st.session_state.novel_service
                         novel_service.generate_next_chapter(novel)
                         st.session_state.selected_chapter_title = f"챕터 {len(novel.chapters) - 1}"
                         st.success("다음 챕터 생성 완료!")
@@ -239,6 +246,7 @@ if st.session_state.current_novel:
             if st.button("💾 현재 소설 저장", use_container_width=True):
                 with st.spinner("소설을 저장하는 중..."):
                     try:
+                        novel_service = st.session_state.novel_service
                         novel_service.save_novel(novel)
                         st.success("소설이 성공적으로 저장되었습니다.")
                     except Exception as e:
