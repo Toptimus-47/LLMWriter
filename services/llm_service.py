@@ -1,11 +1,11 @@
 # services/llm_service.py
 
 from typing import List, Dict, Any
-from novel_data_manager import Novel
 from llm_client import LLMClient
 from faiss_manager import FaissManager
 from prompts.prompt_manager import PromptManager
 from config import LLM_MODELS
+from ..novel_data_manager import Novel # <-- 이 부분을 수정했습니다.
 
 class LLMService:
     def __init__(self, llm_clients: Dict[str, LLMClient], prompt_manager: PromptManager, faiss_manager: FaissManager):
