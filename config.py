@@ -1,6 +1,7 @@
 # config.py
 import os
 import streamlit as st
+import json
 
 class AppConfig:
     """애플리케이션 전반에 사용되는 설정 클래스"""
