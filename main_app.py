@@ -1,6 +1,12 @@
 # main_app.py
 import streamlit as st
 import os
+import sys
+
+# --- 시스템 경로 설정 ---
+# 애플리케이션의 루트 디렉토리를 Python 경로에 추가하여 모듈을 찾을 수 있도록 함
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+
 from services.novel_service import NovelService
 from models.character import Character
 
@@ -137,7 +143,7 @@ if st.session_state.current_novel:
 
         st.markdown("---")
         if st.button("✨ 프롤로그 생성 시작", type="primary", use_container_width=True):
-            with st.spinner("Gemini 1.5 Flash가 프롤로그를 창작하고 있습니다..."):
+            with st.spinner(f"{config.MAIN_LLM_MODEL}가 프롤로그를 창작하고 있습니다..."):
                 try:
                     novel_service.generate_prologue(novel)
                     st.success("프롤로그 생성이 완료되었습니다!")
@@ -152,9 +158,9 @@ if st.session_state.current_novel:
         with col1:
             st.subheader("📜 소설 본문")
             
-            chapter_titles = [f"프롤로그"] + [f"챕터 {i+1}" for i in range(len(novel.chapters) - 1)]
+            chapter_titles = [chapter.title for chapter in novel.chapters]
             
-            if 'selected_chapter_title' not in st.session_state or st.session_state.selected_chapter_title is None:
+            if 'selected_chapter_title' not in st.session_state or st.session_state.selected_chapter_title not in chapter_titles:
                 st.session_state.selected_chapter_title = chapter_titles[-1]
 
             def on_chapter_select():
@@ -170,6 +176,7 @@ if st.session_state.current_novel:
 
             selected_index = chapter_titles.index(st.session_state.selected_chapter_title)
             st.markdown(f"### {st.session_state.selected_chapter_title}")
+            # 줄바꿈을 문단 구분을 위해 두 번의 줄바꿈으로 변경하여 렌더링
             st.markdown(novel.chapters[selected_index].content.replace("\n", "\n\n"))
 
         with col2:
@@ -179,7 +186,8 @@ if st.session_state.current_novel:
                 with st.spinner("다음 챕터를 생성하고 있습니다..."):
                     try:
                         novel_service.generate_next_chapter(novel)
-                        st.session_state.selected_chapter_title = f"챕터 {len(novel.chapters) - 1}"
+                        # 새 챕터가 생성되면 선택된 챕터를 마지막 챕터로 업데이트
+                        st.session_state.selected_chapter_title = novel.chapters[-1].title
                         st.success("다음 챕터 생성 완료!")
                         st.rerun()
                     except Exception as e:
