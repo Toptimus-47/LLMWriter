@@ -11,7 +11,7 @@ class AppConfig:
 
     # --- LLM 모델 ---
     # 사용할 모델 ID. Gemini 2.5 Flash를 기본으로 설정합니다.
-    MAIN_LLM_MODEL = "gemini-1.5-flash-latest" 
+    MAIN_LLM_MODEL = "gemini-2.5-Flash" 
     
     # --- 파일 경로 ---
     NOVELS_DIR = "novels"
