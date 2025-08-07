@@ -1,11 +1,13 @@
 # services/llm_service.py
 
 from typing import List, Dict, Any
-from ..llm_client import LLMClient # <-- 상위 디렉토리의 llm_client.py를 참조하도록 수정
-from ..faiss_manager import FaissManager # <-- 상위 디렉토리의 faiss_manager.py를 참조하도록 수정
-from ..prompts.prompt_manager import PromptManager # <-- 상위 디렉토리의 prompts/prompt_manager.py를 참조하도록 수정
-from ..config import LLM_MODELS # <-- 상위 디렉토리의 config.py를 참조하도록 수정
-from ..novel_data_manager import Novel # <-- 이전에 수정했던 부분
+
+# 모든 import 문을 절대 경로로 수정
+from llm_client import LLMClient
+from faiss_manager import FaissManager
+from prompts.prompt_manager import PromptManager
+from config import LLM_MODELS
+from novel_data_manager import Novel
 
 class LLMService:
     def __init__(self, llm_clients: Dict[str, LLMClient], prompt_manager: PromptManager, faiss_manager: FaissManager):
