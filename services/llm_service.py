@@ -18,12 +18,15 @@ class LLMService:
 
     def generate_prologue(self, settings, model_id):
         prompt = self.prompt_manager.get_prologue_prompt(settings)
-        content = self.client.generate_content(model_id, prompt)
+        # Receive token counts from the client
+        content, input_tokens, output_tokens = self.client.generate_content(model_id, prompt)
         summary = self.prompt_manager.summarize_novel(content)
-        return content, summary
+        return content, summary, input_tokens, output_tokens
 
-    def generate_next_chapter(self, novel: Novel, model_id: str):
-        prompt = self.prompt_manager.get_next_chapter_prompt(novel)
-        content = self.client.generate_content(model_id, prompt)
+    def generate_next_chapter(self, novel: Novel, model_id: str, user_prompt: str = ""):
+        prompt = self.prompt_manager.get_next_chapter_prompt(novel, user_prompt=user_prompt)
+        # Receive token counts from the client
+        content, input_tokens, output_tokens = self.client.generate_content(model_id, prompt)
         novel.add_chapter(content)
         novel.update_summary(self.prompt_manager.summarize_novel(novel.get_full_text()))
+        return input_tokens, output_tokens
