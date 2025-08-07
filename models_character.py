@@ -1,1 +1,25 @@
-{"cells":[{"cell_type":"code","source":"# models/character.py\nfrom dataclasses import dataclass, field\nfrom typing import List\n\n@dataclass\nclass Character:\n    \"\"\"등장인물 정보 데이터 클래스\"\"\"\n    name: str\n    personality: List[str] = field(default_factory=list)\n    appearance: List[str] = field(default_factory=list)\n\n    def to_dict(self):\n        return {\n            \"name\": self.name,\n            \"personality\": self.personality,\n            \"appearance\": self.appearance,\n        }\n\n    @staticmethod\n    def from_dict(data: dict):\n        return Character(\n            name=data.get(\"name\", \"\"),\n            personality=data.get(\"personality\", []),\n            appearance=data.get(\"appearance\", []),\n        )","outputs":[],"execution_count":null,"metadata":{}}],"metadata":{"colab":{"from_bard":true},"kernelspec":{"display_name":"Python 3","name":"python3"}},"nbformat":4,"nbformat_minor":0}
+# models/character.py
+from dataclasses import dataclass, field
+from typing import List
+
+@dataclass
+class Character:
+    """등장인물 정보 데이터 클래스"""
+    name: str
+    personality: List[str] = field(default_factory=list)
+    appearance: List[str] = field(default_factory=list)
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "personality": self.personality,
+            "appearance": self.appearance,
+        }
+
+    @staticmethod
+    def from_dict(data: dict):
+        return Character(
+            name=data.get("name", ""),
+            personality=data.get("personality", []),
+            appearance=data.get("appearance", []),
+        )
