@@ -1,1 +1,37 @@
-{"cells":[{"cell_type":"code","source":"# services/llm_service.py\nfrom clients.llm_client import GeminiClient\nfrom prompts.prompt_manager import PromptManager\nfrom models.novel import Novel\nfrom typing import List\nfrom config import config\n\nclass LLMService:\n    \"\"\"LLM 호출 및 관련 로직 처리를 담당하는 서비스\"\"\"\n    def __init__(self):\n        self.client = GeminiClient()\n        self.prompt_manager = PromptManager()\n        self.model_id = config.MAIN_LLM_MODEL\n\n    def generate_prologue(self, novel: Novel) -> str:\n        \"\"\"프롤로그 생성을 위한 프롬프트를 만들고 LLM을 호출합니다.\"\"\"\n        system_prompt = self.prompt_manager.get_prologue_system_prompt()\n        user_prompt = self.prompt_manager.get_prologue_user_prompt(novel)\n        \n        prologue_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)\n        return prologue_content\n\n    def generate_next_chapter(self, novel: Novel, rag_context: List[str]) -> str:\n        \"\"\"다음 챕터 생성을 위한 프롬프트를 만들고 LLM을 호출합니다.\"\"\"\n        system_prompt = self.prompt_manager.get_next_chapter_system_prompt()\n        user_prompt = self.prompt_manager.get_next_chapter_user_prompt(novel, rag_context)\n        \n        next_chapter_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)\n        return next_chapter_content\n\n    def summarize_text(self, text: str) -> str:\n        \"\"\"주어진 텍스트를 요약합니다.\"\"\"\n        system_prompt = self.prompt_manager.get_summarize_system_prompt()\n        user_prompt = self.prompt_manager.get_summarize_user_prompt(text)\n\n        summary = self.client.generate_content(system_prompt, user_prompt, self.model_id)\n        return summary","outputs":[],"execution_count":null,"metadata":{}}],"metadata":{"colab":{"from_bard":true},"kernelspec":{"display_name":"Python 3","name":"python3"}},"nbformat":4,"nbformat_minor":0}
+# services/llm_service.py
+from clients.llm_client import GeminiClient
+from prompts.prompt_manager import PromptManager
+from models.novel import Novel
+from typing import List
+from config import config
+
+class LLMService:
+    """LLM 호출 및 관련 로직 처리를 담당하는 서비스"""
+    def __init__(self):
+        self.client = GeminiClient()
+        self.prompt_manager = PromptManager()
+        self.model_id = config.MAIN_LLM_MODEL
+
+    def generate_prologue(self, novel: Novel) -> str:
+        """프롤로그 생성을 위한 프롬프트를 만들고 LLM을 호출합니다."""
+        system_prompt = self.prompt_manager.get_prologue_system_prompt()
+        user_prompt = self.prompt_manager.get_prologue_user_prompt(novel)
+        
+        prologue_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)
+        return prologue_content
+
+    def generate_next_chapter(self, novel: Novel, rag_context: List[str]) -> str:
+        """다음 챕터 생성을 위한 프롬프트를 만들고 LLM을 호출합니다."""
+        system_prompt = self.prompt_manager.get_next_chapter_system_prompt()
+        user_prompt = self.prompt_manager.get_next_chapter_user_prompt(novel, rag_context)
+        
+        next_chapter_content = self.client.generate_content(system_prompt, user_prompt, self.model_id)
+        return next_chapter_content
+
+    def summarize_text(self, text: str) -> str:
+        """주어진 텍스트를 요약합니다."""
+        system_prompt = self.prompt_manager.get_summarize_system_prompt()
+        user_prompt = self.prompt_manager.get_summarize_user_prompt(text)
+
+        summary = self.client.generate_content(system_prompt, user_prompt, self.model_id)
+        return summary
